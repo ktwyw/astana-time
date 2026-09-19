@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Astana time</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F2F4F8;
+      --card: #FFFFFF;
+      --ink: #16213A;
+      --muted: #5F6B85;
+      --line: #D6DCE8;
+      --accent: #2456C7;
+      --accent-ink: #FFFFFF;
+      --work: #BFE8CF;      /* 9–18 local */
+      --edge: #FBE3B0;      /* 7–9 and 18–21 */
+      --night: #E6E9F0;
+      --now: #2456C7;
+      --font: "Manrope", "Segoe UI", system-ui, sans-serif;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0F1524; --card: #182036; --ink: #E8ECF5; --muted: #98A4C0; --line: #2A3450;
+        --accent: #7B93FF; --accent-ink: #0F1524; --work: #245C3C; --edge: #6B4F14; --night: #1E2740; --now: #7B93FF;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0F1524; --card: #182036; --ink: #E8ECF5; --muted: #98A4C0; --line: #2A3450;
+      --accent: #7B93FF; --accent-ink: #0F1524; --work: #245C3C; --edge: #6B4F14; --night: #1E2740; --now: #7B93FF;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px 56px; }
+
+    /* ---------- hero clock ---------- */
+    .hero { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin-bottom: 20px; }
+    .hero .city { font-size: 1.1rem; font-weight: 700; color: var(--muted); }
+    .hero .time { font-size: 3.4rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+    .hero .date { color: var(--muted); }
+
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+    h2 { margin: 0 0 12px; font-size: 1rem; font-weight: 700; }
+    .sub { margin: -8px 0 12px; color: var(--muted); font-size: 0.85rem; }
+
+    /* ---------- converter inputs ---------- */
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      font: inherit; color: var(--ink); background: var(--bg);
+      border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    button {
+      font: inherit; font-weight: 500; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+    }
+    button.secondary { background: transparent; color: var(--accent); }
+    button.ghost { background: transparent; color: var(--muted); border-color: var(--line); padding: 4px 10px; font-size: 0.8rem; }
+    button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+    /* ---------- results table ---------- */
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 9px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+    th { color: var(--muted); font-weight: 500; font-size: 0.8rem; border-top: none; }
+    td.t { font-size: 1.15rem; font-weight: 700; white-space: nowrap; }
+    td .day { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; background: var(--edge); font-size: 0.72rem; font-weight: 700; }
+    td .off { color: var(--muted); font-size: 0.8rem; }
+    tr.home td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    td.act { text-align: right; white-space: nowrap; }
+
+    /* ---------- planner grid ---------- */
+    .planner { overflow-x: auto; }
+    .grid { display: grid; grid-template-columns: 130px repeat(24, minmax(22px, 1fr)); gap: 2px; min-width: 700px; }
+    .grid .name { font-size: 0.85rem; font-weight: 700; padding-right: 8px; display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .grid .name small { color: var(--muted); font-weight: 400; margin-left: 4px; }
+    .grid .h { height: 30px; border-radius: 5px; background: var(--night); font-size: 0.68rem; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+    .grid .h.work { background: var(--work); }
+    .grid .h.edge { background: var(--edge); }
+    .grid .h.pick { outline: 2px solid var(--now); outline-offset: -2px; }
+    .grid .head { font-size: 0.68rem; color: var(--muted); text-align: center; }
+    .legend { display: flex; gap: 14px; margin-top: 10px; font-size: 0.8rem; color: var(--muted); }
+    .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+
+    footer { margin-top: 24px; font-size: 0.82rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="hero">
+      <span class="city">Astana</span>
+      <span id="now-time" class="time">--:--</span>
+      <span id="now-date" class="date"></span>
+    </div>
+
+    <!-- ---------- converter ---------- -->
+    <section class="card">
+      <h2>Convert a time</h2>
+      <p class="sub">Enter a time in Astana, or pick another city if the time you have is in that city.</p>
+      <div class="row">
+        <div><label for="in-city">Time is in</label><select id="in-city"></select></div>
+        <div><label for="in-date">Date</label><input id="in-date" type="date"></div>
+        <div><label for="in-time">Time</label><input id="in-time" type="time" step="300"></div>
+        <button id="now-btn" class="secondary" type="button">Now</button>
+      </div>
+      <table id="out" style="margin-top:14px"></table>
+      <div class="row" style="margin-top:12px">
+        <div><label for="add-city">Add a city</label><select id="add-city"></select></div>
+        <button id="add-btn" class="secondary" type="button">Add</button>
+      </div>
+    </section>
+
+    <!-- ---------- planner ---------- -->
+    <section class="card">
+      <h2>Meeting planner</h2>
+      <p class="sub">Cities are ordered west to east by their offset, so the grid reads like a map. Each row is one city; columns are Astana hours for the chosen date. Green is 9–18 local time, amber is early morning or evening. Click a column to set the converter to that hour.</p>
+      <div class="planner"><div id="grid" class="grid"></div></div>
+      <div class="legend">
+        <span><i style="background:var(--work)"></i>working hours</span>
+        <span><i style="background:var(--edge)"></i>7–9, 18–21</span>
+        <span><i style="background:var(--night)"></i>night</span>
+      </div>
+    </section>
+
+    <footer>Kazakhstan has used a single zone, UTC+5, with no daylight saving since 1 March 2024 (IANA <code>Asia/Almaty</code>). Other cities' clock changes are applied automatically by the browser's time-zone database. Your city list is remembered in this browser only.</footer>
+  </main>
+
+  <script>
+    // ---------- configuration ----------
+    const HOME = { name: "Astana", zone: "Asia/Almaty" };
+
+    // Cities offered in the "add" menu. Name → IANA zone.
+    const CATALOG = {
+      "Almaty": "Asia/Almaty", "London": "Europe/London", "Paris": "Europe/Paris", "Berlin": "Europe/Berlin",
+      "Rome": "Europe/Rome", "Madrid": "Europe/Madrid", "Warsaw": "Europe/Warsaw", "Kyiv": "Europe/Kyiv",
+      "Moscow": "Europe/Moscow", "Istanbul": "Europe/Istanbul", "Tbilisi": "Asia/Tbilisi", "Baku": "Asia/Baku",
+      "Tehran": "Asia/Tehran", "Dubai": "Asia/Dubai", "Riyadh": "Asia/Riyadh", "Tashkent": "Asia/Tashkent",
+      "Bishkek": "Asia/Bishkek", "Dushanbe": "Asia/Dushanbe", "Ashgabat": "Asia/Ashgabat", "Kabul": "Asia/Kabul",
+      "New Delhi": "Asia/Kolkata", "Dhaka": "Asia/Dhaka", "Bangkok": "Asia/Bangkok", "Jakarta": "Asia/Jakarta",
+      "Singapore": "Asia/Singapore", "Kuala Lumpur": "Asia/Kuala_Lumpur", "Hong Kong": "Asia/Hong_Kong",
+      "Beijing": "Asia/Shanghai", "Ürümqi (official time)": "Asia/Shanghai", "Taipei": "Asia/Taipei", "Seoul": "Asia/Seoul",
+      "Tokyo": "Asia/Tokyo", "Ulaanbaatar": "Asia/Ulaanbaatar", "Sydney": "Australia/Sydney", "Auckland": "Pacific/Auckland",
+      "Cairo": "Africa/Cairo", "Nairobi": "Africa/Nairobi", "Johannesburg": "Africa/Johannesburg",
+      "New York": "America/New_York", "Toronto": "America/Toronto", "Chicago": "America/Chicago",
+      "Denver": "America/Denver", "Los Angeles": "America/Los_Angeles", "Vancouver": "America/Vancouver",
+      "Mexico City": "America/Mexico_City", "São Paulo": "America/Sao_Paulo", "Buenos Aires": "America/Argentina/Buenos_Aires",
+      "UTC": "UTC",
+    };
+    const DEFAULT_CITIES = ["London", "Berlin", "Moscow", "Istanbul", "Dubai", "Tashkent", "Beijing", "Seoul", "Tokyo", "New York"];
+
+    // ---------- time helpers (all via Intl, which knows every zone's rules) ----------
+    // Parts of an instant as seen in a zone: {y, m, d, h, min, wd, offset}
+    function partsIn(date, zone) {
+      const f = new Intl.DateTimeFormat("en-GB", { timeZone: zone, hourCycle: "h23", year: "numeric", month: "2-digit",
+        day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short", timeZoneName: "shortOffset" });
+      const p = Object.fromEntries(f.formatToParts(date).filter(x => x.type !== "literal").map(x => [x.type, x.value]));
+      return { y: +p.year, m: +p.month, d: +p.day, h: +p.hour, min: +p.minute, wd: p.weekday, offset: p.timeZoneName.replace("GMT", "UTC") };
+    }
+    // Offset of a zone (minutes east of UTC) at a given instant
+    function offsetMinutes(date, zone) {
+      const p = partsIn(date, zone);
+      const asUTC = Date.UTC(p.y, p.m - 1, p.d, p.h, p.min);
+      return Math.round((asUTC - date.getTime()) / 60000 + date.getUTCSeconds() / 60);
+    }
+    // Build an instant from wall-clock fields in a zone (two-pass to handle DST edges)
+    function instantFromWall(y, m, d, h, min, zone) {
+      let guess = new Date(Date.UTC(y, m - 1, d, h, min));
+      guess = new Date(guess.getTime() - offsetMinutes(guess, zone) * 60000);
+      return new Date(Date.UTC(y, m - 1, d, h, min) - offsetMinutes(guess, zone) * 60000);
+    }
+    const pad = n => String(n).padStart(2, "0");
+    const hhmm = p => `${pad(p.h)}:${pad(p.min)}`;
+    const ymd = p => `${p.y}-${pad(p.m)}-${pad(p.d)}`;
+    const longDate = (date, zone) => date.toLocaleDateString("en-GB", { timeZone: zone, weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+    // ---------- state ----------
+    const $ = id => document.getElementById(id);
+    let cities = loadCities();
+    function loadCities() {
+      try { const s = JSON.parse(localStorage.getItem("cities") || "null"); if (Array.isArray(s) && s.length) return s.filter(c => CATALOG[c]); } catch (_) {}
+      return [...DEFAULT_CITIES];
+    }
+    function saveCities() { try { localStorage.setItem("cities", JSON.stringify(cities)); } catch (_) {} }
+    const zoneOf = name => name === HOME.name ? HOME.zone : CATALOG[name];
+    // Home plus chosen cities, ordered west → east by their offset at the given instant.
+    // Sorting at the instant (not "now") keeps the order right across DST changes.
+    function ordered(instant) {
+      return [HOME.name, ...cities].sort((a, b) =>
+        offsetMinutes(instant, zoneOf(a)) - offsetMinutes(instant, zoneOf(b)) || a.localeCompare(b));
+    }
+
+    // ---------- live clock ----------
+    function tick() {
+      const now = new Date();
+      const p = partsIn(now, HOME.zone);
+      $("now-time").textContent = hhmm(p);
+      $("now-date").textContent = `${longDate(now, HOME.zone)} · ${p.offset}`;
+    }
+    setInterval(tick, 1000); tick();
+
+    // ---------- menus ----------
+    function fillMenus() {
+      const inSel = $("in-city"); const keep = inSel.value || HOME.name;
+      inSel.innerHTML = "";
+      for (const c of ordered(new Date())) inSel.add(new Option(c, c));
+      inSel.value = [HOME.name, ...cities].includes(keep) ? keep : HOME.name;
+
+      const addSel = $("add-city"); addSel.innerHTML = "";
+      for (const c of Object.keys(CATALOG)) if (!cities.includes(c)) addSel.add(new Option(`${c} (${CATALOG[c]})`, c));
+    }
+
+    // ---------- converter ----------
+    function selectedInstant() {
+      const [y, m, d] = $("in-date").value.split("-").map(Number);
+      const [h, min] = $("in-time").value.split(":").map(Number);
+      if (!y || Number.isNaN(h)) return null;
+      return instantFromWall(y, m, d, h, min, zoneOf($("in-city").value));
+    }
+
+    function render() {
+      const instant = selectedInstant();
+      if (!instant) return;
+      const home = partsIn(instant, HOME.zone);
+      const rows = ordered(instant).map(name => {
+        const zone = zoneOf(name);
+        const p = partsIn(instant, zone);
+        const dayDiff = Math.round((Date.UTC(p.y, p.m - 1, p.d) - Date.UTC(home.y, home.m - 1, home.d)) / 86400000);
+        const diffH = (offsetMinutes(instant, zone) - offsetMinutes(instant, HOME.zone)) / 60;
+        const diffText = name === HOME.name ? "home" : (diffH === 0 ? "same time" : `${diffH > 0 ? "+" : "−"}${Math.abs(diffH)} h vs Astana`);
+        return `<tr class="${name === HOME.name ? "home" : ""}">
+          <td><strong>${name}</strong><br><span class="off">${p.offset} · ${diffText}</span></td>
+          <td class="t">${hhmm(p)}${dayDiff ? `<span class="day">${dayDiff > 0 ? "+1 day" : "−1 day"}</span>` : ""}</td>
+          <td>${p.wd} ${pad(p.d)}.${pad(p.m)}.${p.y}</td>
+          <td class="act">${name === HOME.name ? "" : `<button class="ghost" data-remove="${name}" type="button">remove</button>`}</td>
+        </tr>`;
+      }).join("");
+      $("out").innerHTML = `<thead><tr><th>City</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows}</tbody>`;
+      renderPlanner(instant);
+    }
+
+    // ---------- planner ----------
+    function renderPlanner(instant) {
+      const home = partsIn(instant, HOME.zone);
+      const grid = $("grid");
+      let html = `<div class="name"></div>` + Array.from({ length: 24 }, (_, h) => `<div class="head">${h}</div>`).join("");
+      for (const name of ordered(instant)) {
+        const zone = zoneOf(name);
+        html += `<div class="name">${name}<small>${partsIn(instant, zone).offset}</small></div>`;
+        for (let h = 0; h < 24; h++) {
+          const t = instantFromWall(home.y, home.m, home.d, h, 0, HOME.zone);
+          const p = partsIn(t, zone);
+          const cls = p.h >= 9 && p.h < 18 ? "work" : (p.h >= 7 && p.h < 21 ? "edge" : "");
+          const pick = h === home.h ? "pick" : "";
+          html += `<div class="h ${cls} ${pick}" data-hour="${h}" title="${name}: ${hhmm(p)} ${p.wd}">${p.h}</div>`;
+        }
+      }
+      grid.innerHTML = html;
+    }
+
+    // ---------- events ----------
+    $("in-date").addEventListener("input", render);
+    $("in-time").addEventListener("input", render);
+    $("in-city").addEventListener("change", render);
+    $("now-btn").addEventListener("click", setNow);
+    $("add-btn").addEventListener("click", () => {
+      const c = $("add-city").value;
+      if (c && !cities.includes(c)) { cities.push(c); saveCities(); fillMenus(); render(); }
+    });
+    $("out").addEventListener("click", e => {
+      const name = e.target.dataset.remove;
+      if (name) { cities = cities.filter(c => c !== name); saveCities(); fillMenus(); render(); }
+    });
+    $("grid").addEventListener("click", e => {
+      const h = e.target.dataset.hour;
+      if (h === undefined) return;
+      const instant = selectedInstant();
+      const home = partsIn(instant, HOME.zone);
+      $("in-city").value = HOME.name;
+      $("in-date").value = ymd(home);
+      $("in-time").value = `${pad(+h)}:00`;
+      render();
+    });
+
+    function setNow() {
+      const p = partsIn(new Date(), HOME.zone);
+      $("in-city").value = HOME.name;
+      $("in-date").value = ymd(p);
+      $("in-time").value = `${pad(p.h)}:${pad(Math.floor(p.min / 5) * 5)}`;
+      render();
+    }
+
+    fillMenus();
+    setNow();
+  </script>
+</body>
+</html>
